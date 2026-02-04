@@ -20,7 +20,7 @@ jobs:
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v12
         with:
-          version: 3.1.70
+          version: 3.1.71
 
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y pkg-config
@@ -30,9 +30,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-build-h264-v2-${{ hashFiles('mk/*', 'Makefile.m4', 'configs/configs/h264-aac-mp3/*') }}
+          key: ${{ runner.os }}-build-h264-v3-${{ hashFiles('mk/*', 'Makefile.m4', 'configs/configs/h264-aac-mp3/*') }}
           restore-keys: |
-            ${{ runner.os }}-build-h264-v2-
+            ${{ runner.os }}-build-h264-v3-
 
       - name: Extract Sources
         if: steps.cache-build.outputs.cache-hit != 'true'

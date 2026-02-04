@@ -1,10 +1,17 @@
---enable-protocol=data --enable-protocol=file --enable-protocol=hls --enable-protocol=jsfetch
+--enable-protocol=data --enable-protocol=file --enable-protocol=jsfetch --enable-protocol=crypto
 --enable-filter=aresample
 --enable-filter=asetnsamples
 --enable-muxer=mp4
+--enable-muxer=matroska
+--enable-demuxer=matroska
 --enable-demuxer=aac
+--enable-demuxer=hls
+--enable-demuxer=flv
+--enable-demuxer=dash
+--enable-muxer=hls
 --enable-parser=aac
 --enable-decoder=aac
+--enable-decoder=h264
 --enable-parser=h264
 --enable-bsf=h264_metadata
 --enable-bsf=extract_extradata
@@ -12,10 +19,16 @@
 --enable-demuxer=mp3
 --enable-demuxer=mov
 --enable-muxer=mp3
+--enable-demuxer=webvtt
+--enable-demuxer=srt
+--enable-demuxer=ass
 --enable-decoder=mp3
 --enable-libmp3lame
 --enable-encoder=libmp3lame
---enable-bsf=h264_metadata
---enable-bsf=extract_extradata
---enable-demuxer=hls
+--enable-libvpx
+--enable-parser=vp9
+--enable-bsf=vp9_metadata
+--enable-bsf=opus_metadata
+--enable-decoder=libvpx_vp9
+--enable-demuxer=ogg
 --enable-ffmpeg --enable-ffprobe
