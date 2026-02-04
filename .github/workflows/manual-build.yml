@@ -1,0 +1,49 @@
+name: Manual Build h264-aac-mp3
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build h264-aac-mp3 variant
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v12
+        with:
+          version: 3.1.70
+          actions-cache-folder: 'cache-emsdk'
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config
+
+      - name: Cache Build Directory
+        id: cache-build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-build-h264-${{ hashFiles('mk/*', 'Makefile.m4', 'configs/configs/h264-aac-mp3/*') }}
+          restore-keys: |
+            ${{ runner.os }}-build-h264-
+
+      - name: Extract Sources
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: make extract
+
+      - name: Build h264-aac-mp3
+        run: make build-h264-aac-mp3 -j$(nproc)
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libav-h264-aac-mp3
+          path: dist/libav-*-h264-aac-mp3.*
