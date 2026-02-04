@@ -5,7 +5,7 @@ Index: ffmpeg-6.0.1/libavformat/Makefile
 @@ -691,6 +691,10 @@ OBJS-$(CONFIG_UDP_PROTOCOL)
  OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o ip.o
  OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
- 
+
 +# libav.js
 +OBJS-$(CONFIG_JSFETCH_PROTOCOL)          += jsfetch.o
 +# /libav.js
@@ -17,15 +17,33 @@ Index: ffmpeg-6.0.1/libavformat/hls.c
 ===================================================================
 --- ffmpeg-6.0.1.orig/libavformat/hls.c
 +++ ffmpeg-6.0.1/libavformat/hls.c
-@@ -673,6 +673,8 @@ static int open_url(AVFormatContext *s,
+@@ -673,6 +673,26 @@ static int open_url(AVFormatContext *s,
          is_http = 1;
      } else if (av_strstart(proto_name, "data", NULL)) {
          ;
 +    } else if (av_strstart(proto_name, "jsfetch", NULL)) {
 +        ;
++#if CONFIG_JSFETCH_PROTOCOL
++    } else if (av_strstart(proto_name, "http", NULL)) {
++        /* libav.js: Rewrite http/https URLs to go through jsfetch protocol */
++        char *jsfetch_url = av_asprintf("jsfetch:%s", url);
++        if (!jsfetch_url)
++            return AVERROR(ENOMEM);
++        ret = ffio_open_whitelist(pb, jsfetch_url,
++                                  AVIO_FLAG_READ, &s->interrupt_callback, opts,
++                                  s->protocol_whitelist, s->protocol_blacklist);
++        av_free(jsfetch_url);
++        if (ret < 0)
++            return ret;
++        if (is_http_out)
++            *is_http_out = 0;
++        if (is_mediaplaylist_out)
++            *is_mediaplaylist_out = 0;
++        return 0;
++#endif
      } else
          return AVERROR_INVALIDDATA;
- 
+
 Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 ===================================================================
 --- /dev/null
@@ -49,28 +67,28 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 + */
-+
+
 +#include "config.h"
 +#include "config_components.h"
-+
+
 +#include "libavutil/error.h"
 +#include "libavutil/opt.h"
-+
+
 +#include "url.h"
-+
+
 +#include <emscripten.h>
 +#include <errno.h>
-+
+
 +typedef struct JSFetchContext {
 +    const AVClass *class;
 +    // All of the real information is stored in a JavaScript structure
 +    int idx;
 +} JSFetchContext;
-+
+
 +static const AVOption options[] = {
 +    { NULL }
 +};
-+
+
 +#if CONFIG_JSFETCH_PROTOCOL
 +static const AVClass jsfetch_context_class = {
 +    .class_name = "jsfetch",
@@ -78,7 +96,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +    .option = options,
 +    .version = LIBAVUTIL_VERSION_INT
 +};
-+
+
 +/**
 + * Open a fetch connection (JavaScript side).
 + */
@@ -116,7 +134,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +        });
 +    });
 +});
-+
+
 +/**
 + * Open a fetch connection.
 + */
@@ -127,7 +145,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +    ctx->idx = jsfetch_open_js(url);
 +    return (ctx->idx > 0) ? 0 : ctx->idx;
 +}
-+
+
 +/**
 + * Read from a fetch connection (JavaScript side).
 + */
@@ -138,7 +156,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +            // Already have data
 +            var fromBuf = jsfo.buf;
 +            var rej = jsfo.rej;
-+
+
 +            if (fromBuf) {
 +                if (fromBuf.done) {
 +                    // EOF
@@ -150,7 +168,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +                    fromBuf.value = fromBuf.value.subarray(size);
 +                    return size;
 +                }
-+
+
 +                /* Otherwise, return the remainder of the buffer and start
 +                 * the next read */
 +                var ret = fromBuf.value.length;
@@ -163,13 +181,13 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +                });
 +                return ret;
 +            }
-+
+
 +            // Otherwise, there was an error
 +            Module.fsThrownError = rej;
 +            console.error(rej);
 +            return -11 /* ECANCELED */;
 +        }
-+
+
 +        // The next data isn't available yet. Force them to wait.
 +        return Promise.race([
 +            jsfo.next,
@@ -177,7 +195,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +        ]).then(function() { return -6 /* EAGAIN */; });
 +    }); });
 +});
-+
+
 +/**
 + * Read from a fetch connection.
 + */
@@ -186,7 +204,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +    JSFetchContext *ctx = h->priv_data;
 +    return jsfetch_read_js(ctx->idx, buf, size);
 +}
-+
+
 +/**
 + * Close a fetch connection (JavaScript side).
 + */
@@ -197,7 +215,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +        delete Module.libavjsJSFetch.fetches[idx];
 +    }
 +});
-+
+
 +/**
 + * Close a fetch connection.
 + */
@@ -207,7 +225,7 @@ Index: ffmpeg-6.0.1/libavformat/jsfetch.c
 +    jsfetch_close_js(ctx->idx);
 +    return 0;
 +}
-+
+
 +const URLProtocol ff_jsfetch_protocol = {
 +    .name               = "jsfetch",
 +    .url_open2          = jsfetch_open,
@@ -226,11 +244,11 @@ Index: ffmpeg-6.0.1/libavformat/protocols.c
 @@ -76,6 +76,10 @@ extern const URLProtocol ff_libzmq_proto
  extern const URLProtocol ff_ipfs_gateway_protocol;
  extern const URLProtocol ff_ipns_gateway_protocol;
- 
+
 +/* libav.js */
 +extern const URLProtocol ff_jsfetch_protocol;
 +/* /libav.js */
 +
  #include "libavformat/protocol_list.c"
- 
+
  const AVClass *ff_urlcontext_child_class_iterate(void **iter)
