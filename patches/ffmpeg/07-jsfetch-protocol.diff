@@ -17,25 +17,32 @@ Index: ffmpeg-6.0.1/libavformat/hls.c
 ===================================================================
 --- ffmpeg-6.0.1.orig/libavformat/hls.c
 +++ ffmpeg-6.0.1/libavformat/hls.c
-@@ -673,6 +673,21 @@ static int open_url(AVFormatContext *s,
-         is_http = 1;
-     } else if (av_strstart(proto_name, "data", NULL)) {
-         ;
-+    } else if (av_strstart(proto_name, "jsfetch", NULL)) {
-+        ;
+@@ -668,7 +668,23 @@ static int open_url(AVFormatContext *s,
+             return AVERROR_INVALIDDATA;
+         }
+     } else if (av_strstart(proto_name, "http", NULL)) {
 +#if CONFIG_JSFETCH_PROTOCOL
-+    } else if (av_strstart(proto_name, "http", NULL)) {
 +        /* libav.js: Rewrite http/https URLs to go through jsfetch protocol */
++        av_dict_copy(&tmp, *opts, 0);
++        av_dict_copy(&tmp, opts2, 0);
 +        char *jsfetch_url = av_asprintf("jsfetch:%s", url);
-+        if (!jsfetch_url)
++        if (!jsfetch_url) {
++            av_dict_free(&tmp);
 +            return AVERROR(ENOMEM);
++        }
 +        ret = s->io_open(s, pb, jsfetch_url, AVIO_FLAG_READ, &tmp);
 +        av_free(jsfetch_url);
 +        av_dict_free(&tmp);
 +        if (is_http_out)
 +            *is_http_out = 0;
 +        return ret;
++#else
+         is_http = 1;
 +#endif
+     } else if (av_strstart(proto_name, "data", NULL)) {
+         ;
++    } else if (av_strstart(proto_name, "jsfetch", NULL)) {
++        ;
      } else
          return AVERROR_INVALIDDATA;
  
