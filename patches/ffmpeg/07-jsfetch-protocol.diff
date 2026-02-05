@@ -17,7 +17,7 @@ Index: ffmpeg-6.0.1/libavformat/hls.c
 ===================================================================
 --- ffmpeg-6.0.1.orig/libavformat/hls.c
 +++ ffmpeg-6.0.1/libavformat/hls.c
-@@ -668,7 +668,23 @@ static int open_url(AVFormatContext *s,
+@@ -668,9 +668,28 @@ static int open_url(AVFormatContext *s,
              return AVERROR_INVALIDDATA;
          }
      } else if (av_strstart(proto_name, "http", NULL)) {
