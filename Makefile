@@ -19,7 +19,7 @@ ES6FLAGS=-sEXPORT_ES6=1 -sUSE_ES6_IMPORT_META=1
 EFLAGS=\
 	`tools/memory-init-file-emcc.sh` \
 	--pre-js pre.js \
-	--post-js build/post.js --extern-post-js extern-post.js \
+	--post-js build/post.js --post-js custom-post.js --extern-post-js extern-post.js \
 	-s "EXPORT_NAME='LibAVFactory'" \
 	-s "EXPORTED_FUNCTIONS=@build/exports.json" \
 	-s "EXPORTED_RUNTIME_METHODS=['ccall', 'cwrap', 'PThread']" \

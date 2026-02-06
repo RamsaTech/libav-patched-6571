@@ -30,9 +30,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-build-h264-v5-${{ hashFiles('mk/*', 'Makefile.m4', 'configs/configs/h264-aac-mp3/*', 'patches/ffmpeg/*') }}
+          key: ${{ runner.os }}-build-h264-v6-${{ hashFiles('mk/*', 'Makefile.m4', 'Makefile', 'custom-post.js', 'configs/configs/h264-aac-mp3/*', 'patches/ffmpeg/*') }}
           restore-keys: |
-            ${{ runner.os }}-build-h264-v5-
+            ${{ runner.os }}-build-h264-v6-
 
       - name: Extract Sources
         if: steps.cache-build.outputs.cache-hit != 'true'
