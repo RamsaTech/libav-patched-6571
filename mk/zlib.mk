@@ -22,7 +22,7 @@ build/zlib-$(ZLIB_VERSION)/configure: build/zlib-$(ZLIB_VERSION).tar.gz
 
 build/zlib-$(ZLIB_VERSION).tar.gz:
 	mkdir -p build
-	curl https://www.zlib.net/fossils/zlib-$(ZLIB_VERSION).tar.gz -L -o $@
+	curl https://github.com/madler/zlib/releases/download/v$(ZLIB_VERSION)/zlib-$(ZLIB_VERSION).tar.gz -L -o $@
 
 zlib-release:
 	cp build/zlib-$(ZLIB_VERSION).tar.gz dist/release/libav.js-$(LIBAVJS_VERSION)/sources/
